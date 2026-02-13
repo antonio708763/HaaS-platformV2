@@ -21,7 +21,7 @@ This file tracks every markdown document from the legacy repo and what happens t
 | philosophy.md | Port | docs/philosophy.md | Preserve principles; light polish | Todo |
 | automation-ideas.md | Port | docs/automation-ideas.md | Keep ideas; organize sections | Todo |
 | docs/glossary.md | Port | docs/glossary.md | Keep terminology consistent | Done |
-| docs/decision-log.md | Port | docs/decision-log.md | Preserve history + reasons | Todo |
+| docs/decision-log.md | Port | docs/decision-log.md | Preserve history + reasons | Done |
 | vm/debian12-base.md | Merge | vm/100-golden.md | Merge into VM100 “source of truth” | In Progress |
 | hardware/lab-build.md | Port | addons-research/lab-build.md | Research track hardware spec | Todo |
 | host/proxmox-setup.md | Port | host/proxmox-setup.md | Core build/runbook | Done |
