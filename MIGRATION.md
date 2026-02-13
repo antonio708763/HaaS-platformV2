@@ -18,7 +18,7 @@ This file tracks every markdown document from the legacy repo and what happens t
 | Old Path (V1) | Action | New Path (V2) | Notes | Status |
 |---|---|---|---|---|
 | README.md | Rebuild | README.md | Rewrite to match V2 structure | Todo |
-| philosophy.md | Port | docs/philosophy.md | Preserve principles; light polish | Todo |
+| philosophy.md | Port | docs/philosophy.md | Preserve principles; light polish | Done |
 | automation-ideas.md | Port | docs/automation-ideas.md | Keep ideas; organize sections | Todo |
 | docs/glossary.md | Port | docs/glossary.md | Keep terminology consistent | Done |
 | docs/decision-log.md | Port | docs/decision-log.md | Preserve history + reasons | Done |
