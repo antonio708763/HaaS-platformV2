@@ -26,5 +26,5 @@ This file tracks every markdown document from the legacy repo and what happens t
 | hardware/lab-build.md | Port | addons-research/lab-build.md | Research track hardware spec | Done |
 | host/proxmox-setup.md | Port | host/proxmox-setup.md | Core build/runbook | Done |
 | host/network-design.md | Port | host/network-design.md | Core design + standards | Done |
-| stacks/immich/README.md | Port | stacks/immich/README.md | Stack install/runbook | Todo |
+| stacks/immich/README.md | Port | stacks/immich/README.md | Stack install/runbook | Done |
 | stacks/immich/troubleshooting.md | Archive | archive/stacks/immich/troubleshooting.md | Keep as reference, not standard flow | Todo |
