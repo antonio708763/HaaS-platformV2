@@ -66,6 +66,17 @@ This stack requires:
 - Docker Compose installed
 - persistent storage for uploads (`./library`)
 - persistent Postgres volume (`pgdata`)
+- ### Required Docker Network: proxy
+
+Immich must attach to the shared external Docker network used by Traefik:
+
+- Network name: proxy
+- Type: external
+
+This network must be created once on VM200 before deploying stacks:
+
+    docker network create proxy
+
 
 Optional (lab / research):
 
