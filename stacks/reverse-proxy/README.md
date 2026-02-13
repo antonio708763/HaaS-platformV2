@@ -1,283 +1,359 @@
-# Reverse Proxy Stack (Client Standard)
+# Reverse Proxy Stack (Client Track)
 
 Purpose:  
-This stack provides a standardized reverse proxy entrypoint for all service stacks running on the Docker Host VM (VM200).
+This stack provides the standardized reverse proxy layer for all client-ready service deployments.
 
-The reverse proxy is the foundation of the platform because it enables:
-
-- One consistent access layer for all apps
-- Centralized TLS termination (HTTPS)
-- Clean routing by hostname (photos.domain.com, vault.domain.com, etc.)
-- Standard logging and security controls
+The reverse proxy enables:
+- HTTPS termination
+- clean DNS-based access to services
+- unified routing through ports 80/443
+- simplified customer onboarding
+- isolation of internal service ports
 
 Scope:  
-Client-ready standard track. This stack is required before deploying production service stacks.
+Client-ready standard track. Deployed on **VM200 (Docker host)**.
+
+This reverse proxy is required before deploying most customer-facing stacks.
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Design Goals](#design-goals)
-- [Networking Model](#networking-model)
-- [Directory Layout](#directory-layout)
-- [Prerequisites](#prerequisites)
-- [Deployment Steps](#deployment-steps)
-- [Proxy Network Standard](#proxy-network-standard)
-- [Validation](#validation)
-- [Backup and Restore Notes](#backup-and-restore-notes)
+- [Standard Architecture](#standard-architecture)
+- [Stack Location](#stack-location)
+- [Networking Standard](#networking-standard)
+- [Directory Standards](#directory-standards)
+- [Deployment](#deployment)
+- [DNS Requirements](#dns-requirements)
+- [HTTPS Strategy](#https-strategy)
+- [Recommended Reverse Proxy Options](#recommended-reverse-proxy-options)
+- [Nginx Proxy Manager Standard (Default)](#nginx-proxy-manager-standard-default)
+- [Traefik Standard (Alternative)](#traefik-standard-alternative)
+- [Service Routing Standard](#service-routing-standard)
+- [Validation Checklist](#validation-checklist)
+- [Backup Policy](#backup-policy)
 - [Golden Rules](#golden-rules)
-- [Next Steps](#next-steps)
 
 ---
 
 ## Overview
 
-The reverse proxy is deployed as its own Docker Compose stack and connects to a shared external Docker network named:
+The reverse proxy is the front door of the platform.
 
-`proxy`
+Once deployed, all services should be accessed like:
 
-All other stacks connect to this same network, allowing the proxy to route traffic to them without exposing service ports directly to the LAN.
+- `https://photos.home.ar`
+- `https://vault.home.ar`
+- `https://status.home.ar`
 
----
+Instead of:
 
-## Design Goals
+- `http://192.168.1.200:3001`
 
-This reverse proxy stack must support:
-
-- HTTPS (TLS termination)
-- Hostname-based routing
-- Centralized control of access to internal services
-- A single "entry point" architecture for client simplicity
-
-This design ensures that internal stacks are not exposed directly.
-
----
-
-## Networking Model
-
-Traffic flow:
-
-Client Device → Reverse Proxy → Internal Docker Stack
-
-The reverse proxy is the only stack that should expose ports publicly.
+This improves:
+- usability
+- security
+- consistency
+- professionalism
 
 ---
 
-## Directory Layout
+## Standard Architecture
 
-Reverse proxy stack directory:
+Standard client architecture:
 
-<pre><code>
-/srv/stacks/reverse-proxy/
+- VM200 runs Docker Compose stacks
+- reverse proxy listens on ports 80/443
+- all other services are internal-only
+- DNS records point to VM200
+
+Example:
+
+- `photos.home.ar` → `192.168.1.200` → reverse proxy → Immich container port 3001
+- `vault.home.ar` → `192.168.1.200` → reverse proxy → Vaultwarden container port 80
+
+---
+
+## Stack Location
+
+Reverse proxy stack must be stored at:
+
+- `/srv/stacks/reverse-proxy/`
+
+This directory is treated as platform infrastructure and must remain stable.
+
+---
+
+## Networking Standard
+
+Reverse proxy must use the shared proxy network.
+
+Standard shared network:
+
+- `proxy`
+
+Create it once:
+
+<pre><code>docker network create proxy</code></pre>
+
+All service stacks must attach to this network.
+
+---
+
+## Directory Standards
+
+Standard stack layout:
+
+- `/srv/stacks/reverse-proxy/`
+
+Optional persistent data layout:
+
+- `/srv/data/reverse-proxy/`
+
+Example:
+
+<pre><code>/srv/stacks/reverse-proxy/
 ├── docker-compose.yml
-├── .env
 └── README.md
-</code></pre>
+
+/srv/data/reverse-proxy/
+├── config/
+└── certs/</code></pre>
 
 ---
 
-## Prerequisites
+## Deployment
 
-Before deployment:
+General deployment workflow:
 
-- VM200 is online and stable
-- Docker Engine installed and working
-- Docker Compose installed and working
-- SSH access confirmed
-- Directory structure exists:
-
-<pre><code>
-/srv/stacks/
-</code></pre>
-
----
-
-## Deployment Steps
-
-### 1. Create the reverse proxy directory
-
-<pre><code class="language-bash">
-sudo mkdirF mkdir -p /srv/stacks/reverse-proxy
-sudo chown -R $USER:$USER /srv/stacks/reverse-proxy
-cd /srv/stacks/reverse-proxy
-</code></pre>
-
----
-
-### 2. Create the shared proxy network
-
-This network must exist before deploying any stack that requires reverse proxy routing.
-
-<pre><code class="language-bash">
-docker network create proxy
-</code></pre>
-
-Verify:
-
-<pre><code class="language-bash">
-docker network ls | grep proxy
-</code></pre>
-
----
-
-### 3. Deploy the reverse proxy stack
-
-The reverse proxy can be implemented using one of the following:
-
-- Traefik (recommended for automation + scaling)
-- Nginx Proxy Manager (recommended for GUI simplicity)
-
-Client standard default:
-
-**Nginx Proxy Manager (NPM)**
-
----
-
-## Proxy Network Standard
-
-All stacks must attach to:
-
-`proxy`
-
-This allows hostname-based routing without exposing container ports directly.
-
-Example requirement for all stacks:
-
-- internal stack network (example: immich)
-- external shared network (proxy)
-
----
-
-## Nginx Proxy Manager (Standard Deployment)
-
-### docker-compose.yml (example)
-
-Create:
-
-`/srv/stacks/reverse-proxy/docker-compose.yml`
-
-<pre><code>
-version: "3.8"
-
-services:
-  npm:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: reverse-proxy-npm
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "81:81"
-    environment:
-      DB_SQLITE_FILE: "/data/database.sqlite"
-    volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
-    networks:
-      - proxy
-
-networks:
-  proxy:
-    external: true
-</code></pre>
-
----
-
-### Start the reverse proxy stack
-
-<pre><code class="language-bash">
+<pre><code>cd /srv/stacks/reverse-proxy
 docker compose up -d
-</code></pre>
-
-Verify container status:
-
-<pre><code class="language-bash">
-docker ps
-</code></pre>
+docker compose ps</code></pre>
 
 ---
 
-## Validation
+## DNS Requirements
 
-### Confirm ports are listening
+DNS must already be functional before deploying reverse proxy.
 
-Expected exposed ports:
+Minimum required DNS behavior:
+
+- `photos.home.ar` resolves to VM200
+- `vault.home.ar` resolves to VM200
+- `status.home.ar` resolves to VM200
+
+Example required DNS mapping:
+
+- `*.home.ar` → `192.168.1.200`
+
+If wildcard DNS is not possible, manually define A records.
+
+See:
+
+- `docs/domain-and-dns-standard.md`
+
+---
+
+## HTTPS Strategy
+
+### Lab / internal network standard
+
+For internal client deployments, HTTPS should still be enabled.
+
+Recommended options:
+
+- self-signed certificates (not preferred)
+- local CA (recommended)
+- Let’s Encrypt DNS challenge (advanced)
+
+---
+
+### Recommended baseline approach
+
+Use reverse proxy + internal DNS + local CA.
+
+This enables:
+- trusted HTTPS
+- no browser warnings
+- professional UX
+
+This may be implemented later as a dedicated "TLS standard" document.
+
+---
+
+## Recommended Reverse Proxy Options
+
+The platform supports two reverse proxy standards.
+
+---
+
+### Option A: Nginx Proxy Manager (recommended default)
+
+Best for:
+- simple deployments
+- client support workflow
+- UI-based configuration
+- fast onboarding
+
+This is the preferred standard for client-ready deployments.
+
+---
+
+### Option B: Traefik (advanced alternative)
+
+Best for:
+- automation-first environments
+- fully GitOps configuration
+- scalable service discovery
+
+Traefik is acceptable but requires more operational maturity.
+
+---
+
+## Nginx Proxy Manager Standard (Default)
+
+Nginx Proxy Manager provides:
+
+- reverse proxy routing UI
+- HTTPS management
+- automatic certificate workflows (when possible)
+
+Recommended for client deployments.
+
+---
+
+### Default ports
+
+NPM requires:
 
 - 80/tcp
 - 443/tcp
 - 81/tcp (admin UI)
 
-Run:
+Admin UI example:
 
-<pre><code class="language-bash">
-ss -tulnp | grep -E "80|443|81"
-</code></pre>
+- `http://192.168.1.200:81`
 
 ---
 
-### Confirm admin UI access
+### Standard admin credentials
 
-From your workstation:
+Admin credentials must be stored securely offline.
 
-- http://&lt;vm200-ip&gt;:81
-
-Default login:
-
-- Email: `admin@example.com`
-- Password: `changeme`
-
-First login will require setting a new password.
+Passwords must never be committed to GitHub.
 
 ---
 
-### Confirm Docker network connectivity
+## Traefik Standard (Alternative)
 
-<pre><code class="language-bash">
-docker network inspect proxy
-</code></pre>
+Traefik is a valid option if:
+
+- routing is fully declared in docker-compose labels
+- services are deployed in a predictable structure
+- configuration is committed cleanly into repo
+
+Traefik is recommended only after standard track is stable.
+
+---
+
+## Service Routing Standard
+
+Once reverse proxy is deployed:
+
+- internal service ports should not be exposed to the LAN
+- services should only publish to the proxy network
+- reverse proxy becomes the only public-facing entry point
+
+Example:
+
+- Immich runs on internal port 3001
+- Reverse proxy routes `photos.home.ar` → `immich-server:3001`
+
+---
+
+### Rule: Every stack must declare a hostname target
+
+Example standards:
+
+| Stack | DNS Name |
+|---|---|
+| Immich | `photos.home.ar` |
+| Vaultwarden | `vault.home.ar` |
+| Uptime Kuma | `status.home.ar` |
+| Portainer | `portainer.home.ar` |
+
+---
+
+## Validation Checklist
+
+After deployment, confirm:
+
+### Docker network exists
+
+<pre><code>docker network ls | grep proxy</code></pre>
+
+---
+
+### Reverse proxy container is running
+
+<pre><code>docker compose ps
+docker logs --tail=50 &lt;container_name&gt;</code></pre>
+
+---
+
+### Ports are listening
+
+<pre><code>ss -tulpn | grep -E "(:80|:443|:81)"</code></pre>
 
 Expected:
-
-- reverse-proxy-npm container is listed under the proxy network
+- 80 and 443 open
+- 81 open (if using NPM)
 
 ---
 
-## Backup and Restore Notes
+### DNS resolves correctly
 
-The reverse proxy stack contains critical data:
+From a workstation:
 
-- SSL certificates
-- proxy host definitions
-- routing configuration
+<pre><code>ping -c 3 photos.home.ar
+ping -c 3 vault.home.ar
+ping -c 3 status.home.ar</code></pre>
 
-These must be included in backups.
+Expected:
+- all resolve to `192.168.1.200`
 
-Minimum required backup data:
+---
 
-<pre><code>
-/srv/stacks/reverse-proxy/data/
-/srv/stacks/reverse-proxy/letsencrypt/
-</code></pre>
+### Web UI access works
+
+Test in browser:
+
+- `http://192.168.1.200:81`
+
+---
+
+## Backup Policy
+
+Reverse proxy stack must be included in VM200 backup policy.
+
+Minimum standard:
+- nightly Proxmox backups of VM200
+- retention minimum 7 days
+- restore test after major proxy configuration changes
+
+See:
+
+- `docs/backup-restore-standard.md`
 
 ---
 
 ## Golden Rules
 
-- Reverse proxy must be deployed before any production stack.
-- Only reverse proxy exposes ports 80/443 to the LAN.
-- Service stacks must not expose application ports unless required for debugging.
+- Reverse proxy must be deployed before exposing services to users.
+- Only ports 80/443 should be customer-facing long-term.
+- DNS must be stable before adding stacks.
 - All stacks must attach to the `proxy` network.
-- SSL certificates must be backed up.
-- Admin UI credentials must be stored securely (never in GitHub).
-
----
-
-## Next Steps
-
-After reverse proxy is deployed:
-
-1. Deploy a test stack (example: uptime-kuma)
-2. Route it through the reverse proxy
-3. Validate HTTPS works
-4. Begin client-ready stack deployments (Immich, Vaultwarden, etc.)
+- Never publish database ports to LAN.
+- Reverse proxy configuration must be documented after every major change.
+- Secrets and admin credentials must never be stored in GitHub.
