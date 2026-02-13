@@ -1,25 +1,40 @@
 version: "3.8"
 
 services:
-  npm:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: reverse-proxy-npm
+  traefik:
+    image: traefik:v3.1
+    container_name: reverse-proxy-traefik
     restart: unless-stopped
 
     ports:
       - "80:80"
       - "443:443"
-      - "81:81"
 
-    environment:
-      DB_SQLITE_FILE: "/data/database.sqlite"
+    command:
+      - "--log.level=INFO"
+      - "--api.dashboard=true"
+
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
 
     volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
     networks:
       - proxy
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`proxy.home.ar`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.service=api@internal"
 
 networks:
   proxy:
