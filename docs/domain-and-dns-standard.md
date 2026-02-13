@@ -174,6 +174,7 @@ Standard service subdomains:
 | Jellyfin | `media.home.ar` |
 | Nextcloud | `cloud.home.ar` |
 | AdGuard / Pi-hole | `dns.home.ar` |
+| Reverse Proxy (Traefik Dashboard) | `proxy.home.ar` | 
 
 ---
 
