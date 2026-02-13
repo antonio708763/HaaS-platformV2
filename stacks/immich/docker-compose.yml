@@ -1,75 +1,77 @@
-services:
-  # -----------------------------
-  # Immich (Application Services)
-  # -----------------------------
+version: "3.8"
 
+services:
   immich-server:
     image: ghcr.io/immich-app/immich-server:release
     container_name: immich-server
     command: ["start.sh", "server"]
     restart: unless-stopped
+
     depends_on:
       - redis
       - database
+
     env_file:
       - .env
+
     user: "1000:1000"
+
     security_opt:
       - no-new-privileges:true
+
     cap_drop:
       - ALL
+
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
 
-    # Expose ONLY to localhost so Caddy can reverse proxy it securely.
-    ports:
-      - "127.0.0.1:2283:2283"
-
     volumes:
-      - ./library:/usr/src/app/upload
-    devices:
-      - /dev/dri:/dev/dri
-    environment:
-      - LIBVA_DRIVER_NAME=r600
-    group_add:
-      - "44"   # video
-      - "105"  # render
+      - /srv/data/immich/library:/usr/src/app/upload
+
     networks:
       - proxy
       - immich
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.immich.rule=Host(`photos.home.ar`)"
+      - "traefik.http.routers.immich.entrypoints=websecure"
+      - "traefik.http.routers.immich.tls=true"
+      - "traefik.http.services.immich.loadbalancer.server.port=2283"
 
   immich-microservices:
     image: ghcr.io/immich-app/immich-server:release
     container_name: immich-microservices
     command: ["start.sh", "microservices"]
     restart: unless-stopped
+
     depends_on:
       - redis
       - database
+
     env_file:
       - .env
+
     user: "1000:1000"
+
     security_opt:
       - no-new-privileges:true
+
     cap_drop:
       - ALL
+
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
     volumes:
-      - ./library:/usr/src/app/upload
-    devices:
-      - /dev/dri:/dev/dri
-    environment:
-      - LIBVA_DRIVER_NAME=r600
-    group_add:
-      - "44"   # video
-      - "105"  # render
+      - /srv/data/immich/library:/usr/src/app/upload
+
     networks:
       - immich
 
@@ -77,35 +79,39 @@ services:
     image: ghcr.io/immich-app/immich-machine-learning:release
     container_name: immich-ml
     restart: unless-stopped
+
     security_opt:
       - no-new-privileges:true
+
     cap_drop:
       - ALL
+
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
     volumes:
-      - ./model-cache:/cache
+      - /srv/data/immich/model-cache:/cache
+
     networks:
       - immich
-
-  # -----------------------------
-  # Immich Dependencies
-  # -----------------------------
 
   redis:
     image: redis:6
     container_name: immich-redis
     restart: unless-stopped
+
     security_opt:
       - no-new-privileges:true
+
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
     networks:
       - immich
 
@@ -113,28 +119,28 @@ services:
     image: pgvector/pgvector:pg14
     container_name: immich-postgres
     restart: unless-stopped
+
     env_file:
       - .env
+
     security_opt:
       - no-new-privileges:true
+
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - /srv/data/immich/pgdata:/var/lib/postgresql/data
+
     networks:
       - immich
 
-volumes:
-  pgdata:
-
 networks:
-  # Reverse proxy network (external). Must exist already.
   proxy:
     external: true
 
-  # Internal app network
   immich:
     driver: bridge
