@@ -1,12 +1,12 @@
 # VM200 — Docker Host (Client Standard)
 
-Purpose:
+Purpose:  
 VM200 is the first production-style workload VM cloned from VM100.
 
-This VM acts as the standardized Docker host for deploying service stacks (Immich, Vaultwarden, monitoring, etc.)
+This VM acts as the standardized Docker host for deploying service stacks (Immich, Vaultwarden, monitoring, etc.)  
 using Docker Compose.
 
-Scope:
+Scope:  
 Client-ready standard track (no GPU passthrough, no research hardware assumptions).
 
 ---
@@ -52,21 +52,21 @@ This VM should remain clean and infrastructure-focused.
 
 Clone VM100 into VM200 using a **full clone**:
 
-~~~bash
+<pre><code class="language-bash">
 qm clone 100 200 --name docker-host-01 --full 1
-~~~
+</code></pre>
 
 Start VM200:
 
-~~~bash
+<pre><code class="language-bash">
 qm start 200
-~~~
+</code></pre>
 
 Optional: confirm VM is running:
 
-~~~bash
+<pre><code class="language-bash">
 qm status 200
-~~~
+</code></pre>
 
 ---
 
@@ -112,16 +112,16 @@ After first boot, verify:
 
 - SSH works
 - `/run/sshd` tmpfiles rule is active
-- fail2ban is running
-- qemu-guest-agent is running
+- Fail2Ban is running
+- QEMU Guest Agent is running
 
 Confirm services:
 
-~~~bash
+<pre><code class="language-bash">
 sudo systemctl status ssh
 sudo systemctl status fail2ban
 sudo systemctl status qemu-guest-agent
-~~~
+</code></pre>
 
 ---
 
@@ -131,9 +131,9 @@ Install Docker Engine using the official Docker repository method.
 
 After installation, validate Docker:
 
-~~~bash
+<pre><code class="language-bash">
 docker run hello-world
-~~~
+</code></pre>
 
 Expected:
 
@@ -145,9 +145,9 @@ Expected:
 
 Docker Compose must be available as:
 
-~~~bash
+<pre><code class="language-bash">
 docker compose version
-~~~
+</code></pre>
 
 If Docker Compose is missing, install the Compose plugin.
 
@@ -161,9 +161,89 @@ All service stacks should live under:
 
 Example layout:
 
-```text
+<pre><code>
 /srv/stacks/
 ├── immich/
 ├── vaultwarden/
 ├── uptime-kuma/
 └── reverse-proxy/
+</code></pre>
+
+Optional data directory:
+
+- `/srv/data/`
+
+Example:
+
+<pre><code>
+/srv/data/
+├── immich/
+├── postgres/
+└── backups/
+</code></pre>
+
+This keeps stack configs clean and separates application data.
+
+---
+
+## Validation Checklist
+
+Run these checks after deployment.
+
+### Confirm network
+
+<pre><code class="language-bash">
+ip a
+ip route
+ping -c 3 192.168.1.1
+ping -c 3 1.1.1.1
+</code></pre>
+
+### Confirm DNS resolution
+
+<pre><code class="language-bash">
+ping -c 3 google.com
+</code></pre>
+
+### Confirm SSH access
+
+From your workstation:
+
+<pre><code class="language-bash">
+ssh user@&lt;vm200-ip&gt;
+</code></pre>
+
+### Confirm Docker functionality
+
+<pre><code class="language-bash">
+docker ps
+docker info
+docker run hello-world
+</code></pre>
+
+---
+
+## Backup Policy
+
+VM200 must be included in Proxmox backup scheduling.
+
+Recommended policy:
+
+- nightly snapshot backup
+- compression: `zstd`
+- retention: 7 days minimum
+
+Important rule:
+
+- backups must be restore-tested after major stack deployments
+
+---
+
+## Golden Rules
+
+- VM200 must remain a dedicated Docker host.
+- Do not install random packages unrelated to hosting services.
+- Service stacks must be deployed using Docker Compose.
+- Secrets must never be committed into GitHub.
+- Always document major changes in `docs/decision-log.md`.
+- Snapshot VM200 before major stack deployments or upgrades.
