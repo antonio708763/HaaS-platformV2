@@ -1,16 +1,16 @@
 # Reverse Proxy Stack (Traefik)
 
-Purpose:  
+## Purpose
+
 Provide a standardized reverse proxy layer for all service stacks running on VM200.
 
 This stack is the central entry point for:
 
 - HTTPS routing (TLS termination)
-- DNS-based service access (photos.home.ar, vault.home.ar, etc.)
+- DNS-based service access (`photos.home.ar`, `vault.home.ar`, etc.)
 - Centralized service exposure through one secure layer
 
-Scope:  
-Client-ready standard track.
+**Scope:** Client-ready standard track.
 
 ---
 
@@ -20,6 +20,7 @@ Client-ready standard track.
 - [Requirements](#requirements)
 - [Directory Layout](#directory-layout)
 - [Docker Network Standard](#docker-network-standard)
+- [Files Included](#files-included)
 - [Deployment](#deployment)
 - [Access Standard](#access-standard)
 - [Adding New Services](#adding-new-services)
@@ -31,16 +32,22 @@ Client-ready standard track.
 
 ## Overview
 
-Traefik is used as the standard reverse proxy for HaaS-platformV2.
+Traefik is the standard reverse proxy for **HaaS-platformV2**.
 
-All stacks (Immich, Vaultwarden, monitoring, etc.) must attach to a shared Docker network:
+All service stacks (Immich, Vaultwarden, monitoring, etc.) must attach to a shared external Docker network named:
 
 - `proxy`
 
-Traefik listens on ports:
+Traefik listens on:
 
-- 80 (HTTP)
-- 443 (HTTPS)
+- **80/tcp** (HTTP)
+- **443/tcp** (HTTPS)
+
+This enables a clean client-facing experience:
+
+- `https://photos.home.ar`
+- `https://vault.home.ar`
+- `https://status.home.ar`
 
 ---
 
@@ -48,11 +55,11 @@ Traefik listens on ports:
 
 This stack requires:
 
-- Debian 12 VM200 Docker Host
+- VM200 (Debian 12 Docker Host)
 - Docker Engine installed
 - Docker Compose installed
 - DNS standard implemented (domain resolves to VM200)
-- Shared Docker proxy network created
+- Shared Docker proxy network created (`proxy`)
 
 ---
 
@@ -61,41 +68,63 @@ This stack requires:
 Standard directory layout:
 
 - Stack configs live in: `/srv/stacks/`
-- App data lives in: `/srv/data/`
+- Application data lives in: `/srv/data/`
 
 Example layout:
 
-    /srv/stacks/reverse-proxy/
-    ├── docker-compose.yml
-    ├── traefik.yml
-    └── dynamic/
+```
+/srv/stacks/reverse-proxy/
+├── docker-compose.yml
+├── traefik.yml
+└── dynamic/
 
-    /srv/data/traefik/
-    ├── acme.json
-    └── logs/
+/srv/data/traefik/
+├── acme.json
+└── logs/
+```
 
 ---
 
 ## Docker Network Standard
 
-Traefik requires an external Docker network called:
+Traefik requires an external Docker network named:
 
 - `proxy`
 
-Create it once:
+Create it once per Docker host:
 
-    docker network create proxy
+```bash
+docker network create proxy
+```
 
 All service stacks must attach to this network so Traefik can route traffic to them.
 
 ---
 
+## Files Included
+
+This stack expects the following files:
+
+- `docker-compose.yml`
+- `traefik.yml`
+- `dynamic/` (optional directory for future rules, middleware, and advanced configs)
+
+Secrets must never be committed into GitHub.
+
+Example:
+
+- `acme.json` must exist on disk but should not be committed.
+
+---
+
 ## Deployment
 
-From VM200:
+From inside VM200:
 
-    cd /srv/stacks/reverse-proxy
-    docker compose up -d
+```bash
+cd /srv/stacks/reverse-proxy
+docker compose up -d
+```
 
 ---
 
@@ -105,36 +134,47 @@ Traefik is responsible for routing requests based on hostnames.
 
 Example standard hostnames:
 
-- photos.home.ar → Immich
-- vault.home.ar → Vaultwarden
-- kuma.home.ar → Uptime Kuma
+- `photos.home.ar` → Immich
+- `vault.home.ar` → Vaultwarden
+- `status.home.ar` → Uptime Kuma
+- `proxy.home.ar` → Traefik dashboard (optional)
 
-All services must be accessed using:
+All client access must occur using:
 
 - DNS name
 - HTTPS
 
 Example:
 
-- https://photos.home.ar
+- `https://photos.home.ar`
 
 ---
 
 ## Adding New Services
 
-To expose a service behind Traefik:
+To expose a new service behind Traefik:
 
-1. Attach the stack container to the `proxy` network
-2. Add Traefik labels
+1. Attach the service container to the `proxy` network
+2. Add Traefik labels to the service container
 
 Example Traefik labels:
 
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.service.rule=Host(`service.home.ar`)"
-      - "traefik.http.routers.service.entrypoints=websecure"
-      - "traefik.http.routers.service.tls=true"
-      - "traefik.http.services.service.loadbalancer.server.port=1234"
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.service.rule=Host(`service.home.ar`)"
+  - "traefik.http.routers.service.entrypoints=websecure"
+  - "traefik.http.routers.service.tls=true"
+  - "traefik.http.services.service.loadbalancer.server.port=1234"
+```
+
+Minimum requirements:
+
+- `traefik.enable=true`
+- Router rule with correct hostname
+- `websecure` entrypoint
+- `tls=true`
+- Correct container internal port defined
 
 ---
 
@@ -142,19 +182,33 @@ Example Traefik labels:
 
 Confirm Traefik is running:
 
-    docker ps | grep traefik
+```bash
+docker ps | grep traefik
+```
 
 Confirm ports are listening:
 
-    sudo ss -tulnp | grep -E ":(80|443)"
+```bash
+sudo ss -tulnp | grep -E ":(80|443)"
+```
 
 Confirm proxy network exists:
 
-    docker network ls | grep proxy
+```bash
+docker network ls | grep proxy
+```
 
 Confirm routing works (from workstation):
 
-    curl -I https://photos.home.ar
+```bash
+curl -I https://photos.home.ar
+```
+
+Expected:
+
+- TLS handshake completes
+- Response headers returned
+- HTTP status 200/301/302 depending on application
 
 ---
 
@@ -162,10 +216,11 @@ Confirm routing works (from workstation):
 
 - Traefik is mandatory for all client standard services.
 - Services should not expose raw ports unless required for debugging.
-- Stacks must join the `proxy` network.
-- DNS must be standardized.
+- All stacks must join the `proxy` network.
+- DNS naming must follow `docs/domain-and-dns-standard.md`.
 - No secrets committed into GitHub.
-- Traefik config must be documented and reproducible.
+- Reverse proxy config must be documented and reproducible.
+- Traefik should remain minimal and stable.
 
 ---
 
@@ -175,5 +230,6 @@ TLS strategy (Let’s Encrypt vs internal CA) is defined in:
 
 - `docs/domain-and-dns-standard.md`
 
-Traefik should remain minimal and stable.
-All complexity should live inside service stacks, not the reverse proxy stack.
+Traefik should remain stable and standardized.
+
+All complexity should live inside the service stacks, not the reverse proxy stack.
