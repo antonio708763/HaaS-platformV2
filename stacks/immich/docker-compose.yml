@@ -40,6 +40,8 @@ services:
       - "traefik.http.routers.immich.rule=Host(`photos.home.ar`)"
       - "traefik.http.routers.immich.entrypoints=websecure"
       - "traefik.http.routers.immich.tls=true"
+      - "traefik.http.routers.immich.tls.options=default@file"
+      - "traefik.http.routers.immich.middlewares=default-chain@file"
       - "traefik.http.services.immich.loadbalancer.server.port=2283"
 
     healthcheck:
