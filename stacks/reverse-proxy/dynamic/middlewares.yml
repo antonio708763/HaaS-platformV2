@@ -1,0 +1,43 @@
+# Traefik Shared Middlewares (Dynamic Config)
+# File: stacks/reverse-proxy/dynamic/middlewares.yml
+#
+# Purpose:
+# Defines shared, reusable middlewares that can be attached to routers via Docker labels.
+#
+# Common label patterns:
+# - "traefik.http.routers.<router>.middlewares=redirect-to-https@file"
+# - "traefik.http.routers.<router>.middlewares=security-headers@file"
+# - "traefik.http.routers.<router>.middlewares=redirect-to-https@file,security-headers@file"
+#
+# Notes:
+# - This file complements security.yml (security-headers).
+# - Keep defaults conservative for client LAN deployments.
+
+http:
+  middlewares:
+    # Redirect HTTP -> HTTPS (attach to routers on entryPoint "web")
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    # Compression (optional)
+    compress:
+      compress: {}
+
+    # Basic rate limiting (optional)
+    # Attach cautiously; may affect large uploads/sync apps if set too low.
+    rate-limit:
+      rateLimit:
+        average: 50
+        burst: 100
+
+    # Default chain (recommended)
+    # Use this on websecure routers:
+    # - security headers
+    # - compression
+    default-chain:
+      chain:
+        middlewares:
+          - security-headers@file
+          - compress@file
