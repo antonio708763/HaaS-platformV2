@@ -38,17 +38,20 @@ providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
+    network: proxy
+
   file:
-    filename: /etc/traefik/dynamic.yml
+    directory: "/etc/traefik/dynamic"
     watch: true
 
 certificatesResolvers:
   letsencrypt:
     acme:
       email: "${TRAEFIK_ACME_EMAIL}"
-      storage: "/letsencrypt/acme.json"
+      storage: "/acme.json"
       httpChallenge:
         entryPoint: web
+
 
 
 serversTransport:
