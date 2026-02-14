@@ -1,17 +1,16 @@
 # Reverse Proxy Stack (Traefik)
 
-Purpose:
-This stack provides the standardized reverse proxy layer for HaaS-platformV2.
+Purpose:  
+Provide a standardized reverse proxy layer for all service stacks running on VM200.
 
-Traefik enables:
-- HTTPS termination
-- DNS-based service routing
-- clean access to stacks without exposing internal ports
-- a scalable standard for client deployments
+This stack is the central entry point for:
 
-Scope:
+- HTTPS routing (TLS termination)
+- DNS-based service access (photos.home.ar, vault.home.ar, etc.)
+- Centralized service exposure through one secure layer
+
+Scope:  
 Client-ready standard track.
-Deployed on VM200 (Docker host).
 
 ---
 
@@ -19,106 +18,162 @@ Deployed on VM200 (Docker host).
 
 - [Overview](#overview)
 - [Requirements](#requirements)
-- [Directory Standard](#directory-standard)
+- [Directory Layout](#directory-layout)
+- [Docker Network Standard](#docker-network-standard)
 - [Deployment](#deployment)
-- [DNS Requirements](#dns-requirements)
-- [Validation Checklist](#validation-checklist)
+- [Access Standard](#access-standard)
+- [Adding New Services](#adding-new-services)
+- [Validation](#validation)
 - [Golden Rules](#golden-rules)
+- [Notes](#notes)
 
 ---
 
 ## Overview
 
-Traefik is the front door of the platform.
+Traefik is used as the standard reverse proxy for HaaS-platformV2.
 
-Once deployed, all services should be accessed through DNS + HTTPS:
+All stacks (Immich, Vaultwarden, monitoring, etc.) must attach to a shared Docker network:
 
-- https://photos.home.ar
-- https://vault.home.ar
-- https://status.home.ar
+- `proxy`
 
-Services should not be accessed long-term using IP:port.
+Traefik listens on ports:
+
+- 80 (HTTP)
+- 443 (HTTPS)
 
 ---
 
 ## Requirements
 
-VM200 must have:
+This stack requires:
+
+- Debian 12 VM200 Docker Host
 - Docker Engine installed
 - Docker Compose installed
-- stable IP address (DHCP reservation or static)
+- DNS standard implemented (domain resolves to VM200)
+- Shared Docker proxy network created
 
 ---
 
-## Directory Standard
+## Directory Layout
 
-Traefik stack must live at:
+Standard directory layout:
+
+- Stack configs live in: `/srv/stacks/`
+- App data lives in: `/srv/data/`
+
+Example layout:
 
     /srv/stacks/reverse-proxy/
+    ├── docker-compose.yml
+    ├── traefik.yml
+    └── dynamic/
 
-Required files:
+    /srv/data/traefik/
+    ├── acme.json
+    └── logs/
 
-    docker-compose.yml
-    README.md
+---
+
+## Docker Network Standard
+
+Traefik requires an external Docker network called:
+
+- `proxy`
+
+Create it once:
+
+    docker network create proxy
+
+All service stacks must attach to this network so Traefik can route traffic to them.
 
 ---
 
 ## Deployment
 
-Create the proxy network once:
-
-    docker network create proxy
-
-Deploy Traefik:
+From VM200:
 
     cd /srv/stacks/reverse-proxy
     docker compose up -d
 
-Confirm it is running:
+---
 
-    docker ps
+## Access Standard
+
+Traefik is responsible for routing requests based on hostnames.
+
+Example standard hostnames:
+
+- photos.home.ar → Immich
+- vault.home.ar → Vaultwarden
+- kuma.home.ar → Uptime Kuma
+
+All services must be accessed using:
+
+- DNS name
+- HTTPS
+
+Example:
+
+- https://photos.home.ar
 
 ---
 
-## DNS Requirements
+## Adding New Services
 
-DNS must resolve the following to VM200:
+To expose a service behind Traefik:
 
-- proxy.home.ar
-- photos.home.ar
-- vault.home.ar
-- status.home.ar
+1. Attach the stack container to the `proxy` network
+2. Add Traefik labels
 
-All service subdomains should point to the same VM200 IP because Traefik routes internally.
+Example Traefik labels:
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.service.rule=Host(`service.home.ar`)"
+      - "traefik.http.routers.service.entrypoints=websecure"
+      - "traefik.http.routers.service.tls=true"
+      - "traefik.http.services.service.loadbalancer.server.port=1234"
 
 ---
 
-## Validation Checklist
+## Validation
 
-Confirm Traefik container is running:
+Confirm Traefik is running:
 
-    docker ps
+    docker ps | grep traefik
 
 Confirm ports are listening:
 
-    ss -tulpn | grep -E "(:80|:443)"
+    sudo ss -tulnp | grep -E ":(80|443)"
 
-Confirm DNS resolves:
+Confirm proxy network exists:
 
-    ping -c 3 proxy.home.ar
-    ping -c 3 photos.home.ar
+    docker network ls | grep proxy
 
-Confirm HTTP redirect works:
+Confirm routing works (from workstation):
 
-- Open http://photos.home.ar
-- It should redirect to https://photos.home.ar
+    curl -I https://photos.home.ar
 
 ---
 
 ## Golden Rules
 
-- Traefik must be deployed before exposing stacks to users.
-- Only ports 80 and 443 should be exposed to the LAN.
-- Internal service ports should never be published publicly.
-- All stacks must join the external proxy network.
-- All client-facing services must be routed by hostname, not IP:port
+- Traefik is mandatory for all client standard services.
+- Services should not expose raw ports unless required for debugging.
+- Stacks must join the `proxy` network.
+- DNS must be standardized.
+- No secrets committed into GitHub.
+- Traefik config must be documented and reproducible.
+
+---
+
+## Notes
+
+TLS strategy (Let’s Encrypt vs internal CA) is defined in:
+
+- `docs/domain-and-dns-standard.md`
+
+Traefik should remain minimal and stable.
+All complexity should live inside service stacks, not the reverse proxy stack.
