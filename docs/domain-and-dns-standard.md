@@ -284,9 +284,9 @@ The following must resolve correctly:
 
 Example required behavior:
 
-- `photos.home.ar` → resolves to `192.168.1.200`
-- `vault.home.ar` → resolves to `192.168.1.200`
-- `status.home.ar` → resolves to `192.168.1.200`
+- `photos.home.ar` → resolves to `192.168.1.24`
+- `vault.home.ar` → resolves to `192.168.1.24`
+- `status.home.ar` → resolves to `192.168.1.24`
 
 ---
 
@@ -302,10 +302,10 @@ Example mapping:
 
 | Record | Type | Target |
 |---|---|---|
-| `photos.home.ar` | A | `192.168.1.200` |
-| `vault.home.ar` | A | `192.168.1.200` |
-| `status.home.ar` | A | `192.168.1.200` |
-| `proxy.home.ar` | A | `192.168.1.200` |
+| `photos.home.ar` | A | `192.168.1.24` |
+| `vault.home.ar` | A | `192.168.1.24` |
+| `status.home.ar` | A | `192.168.1.24` |
+| `proxy.home.ar` | A | `192.168.1.24` |
 
 ---
 
@@ -334,7 +334,7 @@ Example mapping:
 | Component | Location | IP / Name |
 |----------|----------|-----------|
 | Proxmox host | Bare metal | `192.168.1.123` |
-| VM200 Docker Host | Debian 12 VM | `192.168.1.200` |
+| VM200 Docker Host | Debian 12 VM | `192.168.1.24` |
 | Traefik reverse proxy | Docker container | `proxy.home.ar` |
 | Immich | Docker stack | `photos.home.ar` |
 | Vaultwarden | Docker stack | `vault.home.ar` |
@@ -438,7 +438,7 @@ Wildcard DNS is preferred.
 
 Example wildcard record:
 
-- `*.home.ar` → `192.168.1.200`
+- `*.home.ar` → `192.168.1.24`
 
 This prevents needing new DNS entries for every new stack.
 
