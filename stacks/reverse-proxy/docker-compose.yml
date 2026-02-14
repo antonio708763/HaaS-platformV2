@@ -3,38 +3,34 @@ version: "3.8"
 services:
   traefik:
     image: traefik:v3.1
-    container_name: reverse-proxy-traefik
+    container_name: traefik
     restart: unless-stopped
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
 
     ports:
       - "80:80"
       - "443:443"
 
-    command:
-      - "--log.level=INFO"
-      - "--api.dashboard=true"
-
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-
     networks:
       - proxy
 
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`proxy.home.ar`)"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.routers.traefik.tls=true"
-      - "traefik.http.routers.traefik.service=api@internal"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic:/etc/traefik/dynamic:ro
+      - /srv/data/traefik/acme.json:/acme.json
+      - /srv/data/traefik/logs:/logs
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   proxy:
