@@ -1,0 +1,20 @@
+# Reverse Proxy Stack Git Ignore
+# File: stacks/reverse-proxy/.gitignore
+#
+# Purpose:
+# Prevent committing secrets, certificates, and runtime artifacts.
+
+# Environment files (never commit real .env)
+.env
+
+# ACME cert storage (contains private keys)
+acme.json
+
+# Logs
+logs/
+*.log
+
+# Local runtime artifacts
+*.tmp
+*.bak
+.DS_Store
