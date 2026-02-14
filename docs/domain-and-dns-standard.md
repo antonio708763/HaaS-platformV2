@@ -1,39 +1,41 @@
 # Domain and DNS Standard (Client Track)
 
-Purpose:  
-Define standardized DNS naming conventions and domain structure for all HaaS-platformV2 deployments.
+## Purpose
+
+Define standardized DNS naming conventions and domain structure for all **HaaS-platformV2** deployments.
 
 A consistent DNS standard enables:
 
-- clean reverse proxy routing  
-- stable bookmarks for customers  
-- predictable service onboarding  
-- simpler troubleshooting  
-- automation-ready deployments  
+- Clean reverse proxy routing
+- Stable bookmarks for customers
+- Predictable service onboarding
+- Simpler troubleshooting
+- Automation-ready deployments
 
-Scope:  
+## Scope
+
 Client-ready standard track.
 
 ---
 
 ## Table of Contents
 
-- [Overview](#overview)  
-- [Core Naming Philosophy](#core-naming-philosophy)  
-- [Domain Standards](#domain-standards)  
-- [Recommended Internal Domain](#recommended-internal-domain)  
-- [Hostname Standards](#hostname-standards)  
-- [Service Subdomain Standards](#service-subdomain-standards)  
-- [DNS Source Options](#dns-source-options)  
-- [DNS Resolution Requirements](#dns-resolution-requirements)  
-- [DNS Records Standard](#dns-records-standard)  
-- [Traefik Reverse Proxy Requirements](#traefik-reverse-proxy-requirements)  
-- [Example Deployment Mapping](#example-deployment-mapping)  
-- [Validation Checklist](#validation-checklist)  
-- [Client-Friendly Naming](#client-friendly-naming)  
-- [Documentation Rules](#documentation-rules)  
-- [Golden Rules](#golden-rules)  
-- [Notes](#notes)  
+- [Overview](#overview)
+- [Core Naming Philosophy](#core-naming-philosophy)
+- [Domain Standards](#domain-standards)
+- [Recommended Internal Domain](#recommended-internal-domain)
+- [Hostname Standards](#hostname-standards)
+- [Service Subdomain Standards](#service-subdomain-standards)
+- [DNS Source Options](#dns-source-options)
+- [DNS Resolution Requirements](#dns-resolution-requirements)
+- [DNS Records Standard](#dns-records-standard)
+- [Reverse Proxy Dependency](#reverse-proxy-dependency)
+- [Example Deployment Mapping](#example-deployment-mapping)
+- [Validation Checklist](#validation-checklist)
+- [Client-Friendly Naming](#client-friendly-naming)
+- [Documentation Rules](#documentation-rules)
+- [Golden Rules](#golden-rules)
+- [Notes](#notes)
 
 ---
 
@@ -43,20 +45,20 @@ DNS is required for a client-ready platform.
 
 Without DNS:
 
-- services are accessed by IP + port  
-- TLS/HTTPS becomes inconsistent  
-- customer experience feels unfinished  
+- Services are accessed by IP + port
+- TLS/HTTPS becomes inconsistent
+- Customer experience feels unfinished
 
 With DNS:
 
-- services are accessed like real apps  
-- reverse proxy becomes clean  
-- the platform becomes product-like  
+- Services are accessed like real apps
+- Reverse proxy becomes clean
+- The platform becomes product-like
 
 Example:
 
-- BAD: `http://192.168.1.200:3001`  
-- GOOD: `https://photos.home.ar`  
+- **BAD:** `http://192.168.1.200:3001`
+- **GOOD:** `https://photos.home.ar`
 
 ---
 
@@ -64,11 +66,11 @@ Example:
 
 The platform naming system must be:
 
-- predictable  
-- short and memorable  
-- scalable  
-- automation-friendly  
-- client-friendly  
+- Predictable
+- Short and memorable
+- Scalable
+- Automation-friendly
+- Client-friendly
 
 DNS names should never be random.
 
@@ -77,8 +79,6 @@ DNS names should never be random.
 ## Domain Standards
 
 This platform supports two domain types.
-
----
 
 ### Internal-only domain (default standard)
 
@@ -102,11 +102,11 @@ Example:
 
 This requires:
 
-- DNS provider control  
-- TLS certificate automation  
-- remote access tunnel or port forwarding  
+- DNS provider control
+- TLS certificate automation
+- remote access tunnel or port forwarding
 
-Public DNS is not required for baseline client deployments.
+Public DNS is **not required** for baseline client deployments.
 
 ---
 
@@ -118,17 +118,17 @@ The recommended internal domain is:
 
 Reasoning:
 
-- short  
-- clean  
-- not a real public TLD  
-- easy to type  
-- feels like a real brand product  
+- Short
+- Clean
+- Not a real public TLD
+- Easy to type
+- Feels like a real brand product
 
 Example service names:
 
-- `photos.home.ar`  
-- `vault.home.ar`  
-- `status.home.ar`  
+- `photos.home.ar`
+- `vault.home.ar`
+- `status.home.ar`
 
 ---
 
@@ -136,18 +136,14 @@ Example service names:
 
 ### Proxmox host naming
 
-Proxmox nodes should use:
+Proxmox nodes must use:
 
-- `haas-host-01`  
-- `haas-host-02`  
+- `haas-node-01`
+- `haas-node-02`
 
 Lab example:
 
 - `labcore01`
-
-Optional FQDN example:
-
-- `haas-host-01.home.ar`
 
 ---
 
@@ -157,16 +153,16 @@ VM names must follow a predictable role format.
 
 Standard VM names:
 
-- `vm100-golden`  
-- `vm200-docker-host`  
-- `vm210-dns`  
-- `vm220-monitoring`  
+- `vm100-golden`
+- `vm200-docker-host`
+- `vm210-dns`
+- `vm220-monitoring`
 
-Alternative (Proxmox UI naming style):
+Or in Proxmox UI naming style:
 
-- `docker-host-01`  
-- `dns-01`  
-- `monitoring-01`  
+- `docker-host-01`
+- `dns-01`
+- `monitoring-01`
 
 ---
 
@@ -177,7 +173,7 @@ Services must use clear functional names.
 Standard service subdomains:
 
 | Service | DNS Name |
-|--------|----------|
+|---|---|
 | Immich | `photos.home.ar` |
 | Vaultwarden | `vault.home.ar` |
 | Uptime Kuma | `status.home.ar` |
@@ -195,13 +191,15 @@ Standard service subdomains:
 
 Do not name services like:
 
-- `immich.home.ar`  
-- `vaultwarden.home.ar`  
+- `immich.home.ar`
+- `vaultwarden.home.ar`
 
 Instead, name them by what the client understands:
 
-- `photos.home.ar`  
-- `vault.home.ar`  
+- `photos.home.ar`
+- `vault.home.ar`
+
+Clients should never be exposed to backend container names.
 
 ---
 
@@ -215,15 +213,15 @@ DNS must be provided by one of the following.
 
 Client router provides DNS.
 
-Pros:
+**Pros:**
 
-- zero setup  
-- already works  
+- Zero setup
+- Already works
 
-Cons:
+**Cons:**
 
-- limited custom DNS support  
-- inconsistent across router brands  
+- Limited custom DNS support
+- Inconsistent across router brands
 
 Router DNS is acceptable for early lab work.
 
@@ -233,20 +231,20 @@ Router DNS is acceptable for early lab work.
 
 Example locations:
 
-- Windows: `C:\Windows\System32\drivers\etc\hosts`  
-- Linux/macOS: `/etc/hosts`  
+- Windows: `C:\Windows\System32\drivers\etc\hosts`
+- Linux/macOS: `/etc/hosts`
 
-Pros:
+**Pros:**
 
-- simple  
-- fast  
+- Simple
+- Fast
 
-Cons:
+**Cons:**
 
-- does not scale  
-- must be repeated on every device  
+- Does not scale
+- Must be repeated on every device
 
-This is not acceptable for real client deployments.
+This is **not acceptable** for real client deployments.
 
 ---
 
@@ -256,20 +254,20 @@ Use VM210 to provide DNS.
 
 Recommended DNS solutions:
 
-- AdGuard Home  
-- Pi-hole  
-- Unbound (optional)  
+- AdGuard Home
+- Pi-hole
+- Unbound (optional)
 
-Pros:
+**Pros:**
 
-- scalable  
-- clean DNS control  
-- supports local overrides  
-- enables real subdomain structure  
+- Scalable
+- Clean DNS control
+- Supports local overrides
+- Enables real subdomain structure
 
-Cons:
+**Cons:**
 
-- requires VM210 setup  
+- Requires VM210 setup
 
 VM210 becomes the long-term client standard.
 
@@ -279,16 +277,16 @@ VM210 becomes the long-term client standard.
 
 The following must resolve correctly:
 
-- Proxmox host  
-- VM200 Docker host  
-- reverse proxy endpoints  
-- all service subdomains  
+- Proxmox host
+- VM200 Docker host
+- Reverse proxy endpoints
+- All service subdomains
 
 Example required behavior:
 
-- `photos.home.ar` resolves to `192.168.1.200`  
-- `vault.home.ar` resolves to `192.168.1.200`  
-- `status.home.ar` resolves to `192.168.1.200`  
+- `photos.home.ar` → resolves to `192.168.1.200`
+- `vault.home.ar` → resolves to `192.168.1.200`
+- `status.home.ar` → resolves to `192.168.1.200`
 
 ---
 
@@ -298,28 +296,12 @@ Example required behavior:
 
 All services resolve to VM200.
 
-This is because VM200 hosts the reverse proxy (Traefik).
+This is because VM200 hosts the reverse proxy.
 
----
-
-### Preferred wildcard model (best practice)
-
-Wildcard record:
-
-- `*.home.ar` → `192.168.1.200`
-
-This prevents manually adding DNS records for every new service.
-
----
-
-### Non-wildcard model (acceptable fallback)
-
-If wildcard records are not possible, create one record per service.
-
-Example records:
+Example mapping:
 
 | Record | Type | Target |
-|--------|------|--------|
+|---|---|---|
 | `photos.home.ar` | A | `192.168.1.200` |
 | `vault.home.ar` | A | `192.168.1.200` |
 | `status.home.ar` | A | `192.168.1.200` |
@@ -327,33 +309,145 @@ Example records:
 
 ---
 
-## Traefik Reverse Proxy Requirements
+## Reverse Proxy Dependency
 
-Traefik assumes:
+All client-standard deployments assume:
 
-- it is running on VM200  
-- it is bound to ports 80 and 443  
-- it receives requests using DNS-resolved hostnames  
-- it routes based on Docker labels  
+- Traefik is deployed on VM200
+- Traefik is the only system exposing ports `80/443`
+- All services route through Traefik using DNS + HTTPS
 
-Example flow:
+**Rule:** containers must not publish service ports directly to the LAN.
 
-- user visits `https://photos.home.ar`  
-- DNS resolves to VM200 IP  
-- Traefik receives the request  
-- Traefik routes to the correct container  
+---
 
-Traefik routing requires:
+## Example Deployment Mapping
 
-- Docker container labels  
-- correct `Host()` rules  
+Standard client deployment layout:
 
-Example Traefik labels:
+- VM200 = Docker host + Traefik reverse proxy
+- VM210 = DNS (optional but recommended)
+- All services live behind Traefik
 
-```yaml
-labels:
-  - "traefik.enable=true"
-  - "traefik.http.routers.immich.rule=Host(`photos.home.ar`)"
-  - "traefik.http.routers.immich.entrypoints=websecure"
-  - "traefik.http.routers.immich.tls=true"
-  - "traefik.http.services.immich.loadbalancer.server.port=2283"
+Example mapping:
+
+| Component | Location | IP / Name |
+|----------|----------|-----------|
+| Proxmox host | Bare metal | `192.168.1.123` |
+| VM200 Docker Host | Debian 12 VM | `192.168.1.200` |
+| Traefik reverse proxy | Docker container | `proxy.home.ar` |
+| Immich | Docker stack | `photos.home.ar` |
+| Vaultwarden | Docker stack | `vault.home.ar` |
+| Uptime Kuma | Docker stack | `status.home.ar` |
+
+---
+
+## Validation Checklist
+
+Run these checks from your workstation.
+
+---
+
+### Confirm DNS resolution
+
+```bash
+nslookup photos.home.ar
+nslookup vault.home.ar
+nslookup proxy.home.ar
+```
+
+Expected:
+
+- All records resolve to VM200 IP
+
+---
+
+### Confirm HTTP routing
+
+```bash
+curl -I http://photos.home.ar
+curl -I http://vault.home.ar
+```
+
+Expected:
+
+- HTTP redirects to HTTPS (301/308)
+
+---
+
+### Confirm HTTPS connectivity
+
+```bash
+curl -k https://photos.home.ar
+curl -k https://vault.home.ar
+```
+
+Expected:
+
+- TLS handshake works
+- Valid response headers returned
+
+**Note:** Let's Encrypt certificates may take several minutes to issue after first deployment.
+
+---
+
+## Client-Friendly Naming
+
+DNS names must reflect what the client understands.
+
+Good examples:
+
+- `photos.home.ar`
+- `vault.home.ar`
+- `files.home.ar`
+- `status.home.ar`
+
+Bad examples:
+
+- `immich.home.ar`
+- `pgvector.home.ar`
+- `redis.home.ar`
+
+Clients should never be exposed to backend container names.
+
+---
+
+## Documentation Rules
+
+- All service docs must list the expected DNS hostname
+- All stacks must document the Traefik hostname label used
+- Any change to DNS naming must be logged in `docs/decision-log.md`
+- Standard track documentation must assume DNS exists
+
+---
+
+## Golden Rules
+
+- All stacks must use `.home.ar` naming standard
+- DNS must resolve all stack subdomains to VM200
+- Reverse proxy must remain the only service exposing ports `80/443`
+- Containers must **NOT** publish their service ports directly to the LAN
+- All access must occur through Traefik using DNS + HTTPS
+- If DNS is broken, the platform is considered non-functional
+
+---
+
+## Notes
+
+Wildcard DNS is preferred.
+
+Example wildcard record:
+
+- `*.home.ar` → `192.168.1.200`
+
+This prevents needing new DNS entries for every new stack.
+
+If wildcard DNS is not possible:
+
+- Every stack must define a dedicated A record
+
+Future improvement (recommended):
+
+- VM210 DNS should own authoritative DNS for `home.ar`
+- DHCP should distribute VM210 as the default resolver
+- Router DNS should be bypassed entirely
