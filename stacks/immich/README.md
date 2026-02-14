@@ -1,39 +1,46 @@
 # Immich Stack (Photo Management)
 
-Purpose:  
-Document the Immich photo management stack deployment, configuration, and prerequisites for the HaaS-platform Docker Host VM (VM200).
+## Purpose
 
-Scope:  
-Client-ready standard track using **Traefik reverse proxy** and DNS-based access.
+Document the Immich photo management stack deployment, configuration, and prerequisites for the **HaaS-platformV2 Docker Host VM (VM200)**.
+
+This is written for the **client-ready standard track** using:
+
+- **Traefik reverse proxy** (`stacks/reverse-proxy/`)
+- **DNS-based access** (example: `photos.home.ar`)
 
 This stack provides:
 
 - Private photo/video backup and organization
 - Machine learning face recognition and search
-- Optional hardware-accelerated video processing (VAAPI)
+- Optional hardware-accelerated video processing (VAAPI) *(research only)*
 
 ---
 
 ## Table of Contents
 
-- [Stack Overview](#stack-overview)
+- [Overview](#overview)
 - [Services](#services)
 - [Prerequisites](#prerequisites)
+- [Directory Standards](#directory-standards)
 - [Networking](#networking)
-- [Deployment](#deployment)
 - [Configuration](#configuration)
-- [Access (Client Standard)](#access-client-standard)
+- [Deployment](#deployment)
+- [Access Standard](#access-standard)
 - [Validation](#validation)
-- [Hardware Acceleration (VAAPI)](#hardware-acceleration-vaapi)
+- [Updates](#updates)
+- [Hardware Acceleration](#hardware-acceleration)
 - [Security Notes](#security-notes)
 - [Common Commands](#common-commands)
 - [Notes](#notes)
 
 ---
 
-## Stack Overview
+## Overview
 
 Immich is a self-hosted photo and video management platform designed as a privacy-first alternative to cloud photo services.
+
+In the HaaS-platformV2 **standard track**, Immich is deployed on **VM200** and is accessed **only through Traefik** using **DNS + HTTPS**.
 
 ---
 
@@ -62,45 +69,109 @@ Containers used by this stack:
 
 This stack requires:
 
-- Debian 12 Docker Host VM (example: VM200)
+- VM200 (Debian 12 Docker Host)
 - Docker Engine installed
 - Docker Compose installed
-- `.env` file created from `.env.example`
-- Persistent storage for uploads (`./library`)
-- Persistent Postgres volume (`pgdata`)
+- Traefik reverse proxy stack deployed (`stacks/reverse-proxy/`)
+- DNS standard implemented (`docs/domain-and-dns-standard.md`)
+- `.env` file created on VM200 from `.env.example` *(do not commit `.env`)*
+- Persistent storage for uploads
+- Persistent Postgres data directory
 
-### Required Docker Network: `proxy`
+---
 
-Immich must attach to the shared external Docker network used by Traefik.
+## Directory Standards
 
-- Network name: `proxy`
-- Type: external
+Standard directories on VM200:
 
-This network must be created once on VM200 before deploying stacks:
+- Stack configs: `/srv/stacks/`
+- App data: `/srv/data/`
 
-    docker network create proxy
+Example Immich layout:
 
-Optional (research only):
+```
+/srv/stacks/immich/
+├── docker-compose.yml
+├── .env.example
+└── (local .env created on VM200)
 
-- GPU passthrough configured
-- `/dev/dri` accessible inside the VM
-- VAAPI driver functioning (`vainfo` works)
+/srv/data/immich/
+├── library/
+├── model-cache/
+└── pgdata/
+```
 
 ---
 
 ## Networking
 
-Networks used:
+### Required Docker Network: `proxy`
 
-- **proxy** (external shared network)  
-  Used for reverse proxy access (Traefik)
+Immich must attach to the shared external Docker network used by Traefik:
 
-- **immich** (internal stack network)  
-  Used for internal container communication
+- Network name: `proxy`
+- Type: external
 
-Create the shared proxy network (only once per Docker host VM):
+Create once on VM200 (if not already created by reverse-proxy setup):
 
-    docker network create proxy
+```bash
+docker network create proxy
+```
+
+### Networks used by Immich stack
+
+- **proxy** *(external shared network)*  
+  Used for Traefik reverse proxy routing.
+
+- **immich** *(internal stack network)*  
+  Used for internal container communication.
+
+---
+
+## Configuration
+
+### .env handling (IMPORTANT)
+
+In GitHub you keep:
+
+- `.env.example` *(safe template)*
+
+On VM200 you create:
+
+- `.env` *(real values, never committed)*
+
+Create the real `.env` on VM200:
+
+```bash
+cd /srv/stacks/immich
+cp .env.example .env
+```
+
+Edit `.env` and set required values.
+
+### Required variables (minimum)
+
+Examples (your `.env.example` may include more):
+
+```conf
+DB_PASSWORD=your_secure_password
+REDIS_HOSTNAME=redis
+DB_HOSTNAME=database
+```
+
+### Persistent storage paths (standard)
+
+Immich uploads:
+
+- `/srv/data/immich/library` → container upload path
+
+Database:
+
+- `/srv/data/immich/pgdata` → `/var/lib/postgresql/data`
+
+ML cache:
+
+- `/srv/data/immich/model-cache` → `/cache`
 
 ---
 
@@ -108,57 +179,30 @@ Create the shared proxy network (only once per Docker host VM):
 
 From inside VM200:
 
-    cd /srv/stacks/immich
-    cp .env.example .env
-
-Edit `.env` and set required values.
-
-Deploy:
-
-    docker compose up -d
+```bash
+cd /srv/stacks/immich
+docker compose up -d
+```
 
 ---
 
-## Configuration
+## Access Standard
 
-The `.env` file is required.
-
-Required variables:
-
-    DB_PASSWORD=your_secure_password
-    REDIS_HOSTNAME=redis
-    DB_HOSTNAME=database
-
-Storage paths:
-
-- `./library` → `/usr/src/app/upload` (photos/videos)
-
-Important rules:
-
-- `DB_PASSWORD` must match the Postgres password configured in the compose file
-- Secrets must never be committed into GitHub
-
----
-
-## Access (Client Standard)
-
-Immich must be accessed through the reverse proxy using DNS + HTTPS.
+Immich must be accessed through the reverse proxy using **DNS + HTTPS**.
 
 Standard URL example:
 
 - `https://photos.home.ar`
 
-Immich should not be accessed long-term using raw IP:port.
+Debug-only access (avoid long-term):
 
-Example (debug only):
+- `http://<vm200-ip>:2283`
 
-- `http://192.168.1.200:2283`
-
-Reverse proxy routing is handled by Traefik labels inside:
+Routing is handled by Traefik labels inside:
 
 - `stacks/immich/docker-compose.yml`
 
-Reverse proxy stack reference:
+Reverse proxy reference:
 
 - `stacks/reverse-proxy/`
 
@@ -166,86 +210,64 @@ Reverse proxy stack reference:
 
 ## Validation
 
-View logs:
+Confirm containers are up:
 
-    docker compose logs -f immich-server
+```bash
+docker compose ps
+```
 
-Health check:
+Tail logs:
 
-    curl http://immich-server:3001/health
+```bash
+docker compose logs -f immich-server
+```
 
-Expected:
+Confirm DNS and HTTPS routing from your workstation:
 
-- Service responds without errors
-- UI is accessible through Traefik reverse proxy
-
-Example access URL:
-
-- `https://photos.home.ar`
-
----
-
-## Hardware Acceleration (VAAPI)
-
-This is optional and applies to lab/research builds.
-
-### GPU Requirements
-
-Example lab GPU:
-
-- AMD Radeon HD 6750 (Juniper PRO)
-- PCI ID: `1002:68bf`
-
-Required inside VM:
-
-- VFIO passthrough configured
-- `/dev/dri` device nodes available
-- Proper group access (`video`, `render`)
-
-Example groups:
-
-- `video` (GID 44)
-- `render` (GID 105)
-
----
-
-### VAAPI Setup
-
-Example driver:
-
-- `LIBVA_DRIVER_NAME=r600`
-
-Container requirements:
-
-- Mount `/dev/dri:/dev/dri`
-- Include container groups:
-  - `44` (video)
-  - `105` (render)
-
----
-
-### VAAPI Validation (inside VM)
-
-    lspci -nnk | grep VGA
-    vainfo
-    ls -l /dev/dri
+```bash
+curl -I https://photos.home.ar
+```
 
 Expected:
 
-- `card*` devices visible
-- Kernel driver shows `radeon`
-- `vainfo` shows supported decode profiles
+- TLS handshake completes
+- Response headers returned
+- HTTP status 200/301/302 depending on app state
+
+---
+
+## Updates
+
+Pull latest images and restart:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+---
+
+## Hardware Acceleration
+
+**Standard track note:** GPU/VAAPI is **not required** for client-standard baseline.
+
+If you enable VAAPI (research track), document it under `addons-research/` and ensure:
+
+- `/dev/dri` is accessible
+- correct driver and permissions exist
+- containers are configured with required mounts and groups
 
 ---
 
 ## Security Notes
 
-Recommended security posture:
+Recommended security posture (already reflected in the compose pattern used in this repo):
 
 - Non-root container execution (`1000:1000`)
 - `no-new-privileges: true`
 - Drop unnecessary Linux capabilities (`cap_drop: ALL`)
 - Log rotation enabled (`max-size`, `max-file`)
+- No service ports published directly to LAN (Traefik only for 80/443)
 
 ---
 
@@ -253,36 +275,31 @@ Recommended security posture:
 
 Show running containers:
 
-    docker ps
+```bash
+docker ps
+```
 
 Start the stack:
 
-    docker compose up -d
+```bash
+docker compose up -d
+```
 
 Stop the stack:
 
-    docker compose down
-
-Pull updates:
-
-    docker compose pull
-    docker compose up -d
+```bash
+docker compose down
+```
 
 ---
 
 ## Notes
 
 - Reverse proxy expects external `proxy` network (Traefik).
-- This lab stack uses a research GPU; client reference builds should use modern VAAPI-capable hardware.
 - If Immich is exposed publicly, additional security hardening is required.
+- Keep `.env` and any secrets out of GitHub.
 
-Useful endpoints:
+Next step (stack level):
 
-- `GET /health` → Immich server status  
-- `GET /api/server/info` → System information
-
-Next steps:
-
-- Confirm Traefik routing
-- Configure DNS records
-- Document backups and restore procedures
+- Confirm Traefik routing for `photos.home.ar`
+- Document backups (VM200 + `/srv/data/immich`) and restore procedure
