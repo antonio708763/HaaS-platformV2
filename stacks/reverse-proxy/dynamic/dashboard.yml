@@ -1,0 +1,36 @@
+# Traefik Dashboard Exposure (Dynamic Config)
+# File: stacks/reverse-proxy/dynamic/dashboard.yml
+#
+# Purpose:
+# Exposes the Traefik dashboard through HTTPS using the standard DNS naming scheme.
+#
+# IMPORTANT:
+# - Dashboard should NOT be exposed publicly in client deployments unless protected.
+# - Always protect with BasicAuth middleware (recommended).
+#
+# Access URL (example):
+# https://proxy.home.ar
+
+http:
+  routers:
+    traefik-dashboard:
+      rule: "Host(`proxy.home.ar`)"
+      entryPoints:
+        - websecure
+      service: api@internal
+      tls: {}
+
+  # Optional: BasicAuth protection (recommended)
+  #
+  # middlewares:
+  #   dashboard-auth:
+  #     basicAuth:
+  #       users:
+  #         - "admin:$apr1$H6uskkkW$IgXLP6ewTrSuBkTrqE8wj/"
+  #
+  # To generate a password hash:
+  # htpasswd -nb admin strongpassword
+  #
+  # Then uncomment middleware and attach it to router:
+  # middlewares:
+  #   - dashboard-auth
