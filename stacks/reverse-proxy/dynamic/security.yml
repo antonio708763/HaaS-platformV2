@@ -1,0 +1,52 @@
+# Traefik Security Middleware (Dynamic Config)
+# File: stacks/reverse-proxy/dynamic/security.yml
+#
+# Purpose:
+# Defines shared security middleware that can be reused across all routers/stacks.
+#
+# How to use (example label on a service):
+# - "traefik.http.routers.<router>.middlewares=security-headers@file"
+#
+# Notes:
+# - These are safe defaults for a client LAN environment.
+# - Adjust cautiously if you introduce external/public exposure.
+
+http:
+  middlewares:
+    security-headers:
+      headers:
+        # Basic hardening headers
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+
+        # Referrer policy (safe default)
+        referrerPolicy: "no-referrer"
+
+        # HSTS (only meaningful over HTTPS)
+        # Consider increasing once stable; keep conservative by default.
+        stsSeconds: 15552000   # 180 days
+        stsIncludeSubdomains: true
+        stsPreload: false
+
+        # Disable the Server header exposure
+        # (Traefik may still add its own; this helps reduce info leakage)
+        customResponseHeaders:
+          Server: ""
+
+    # Optional: Redirect HTTP -> HTTPS (if you add a web router for redirect)
+    # redirect-to-https:
+    #   redirectScheme:
+    #     scheme: https
+    #     permanent: true
+
+    # Optional: BasicAuth (recommended for Traefik dashboard if exposed)
+    #
+    # dashboard-auth:
+    #   basicAuth:
+    #     realm: "Traefik Dashboard"
+    #     users:
+    #       # Generate with:
+    #       #   htpasswd -nb admin strongpassword
+    #       # Then paste the full output line here.
+    #       - "admin:$apr1$REPLACE_ME$REPLACE_ME"
