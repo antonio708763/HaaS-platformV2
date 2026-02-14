@@ -1,9 +1,9 @@
 # Immich Troubleshooting (Client Track)
 
-Purpose:
+Purpose:  
 Common issues, error messages, and resolution steps for Immich stack deployment and operation on VM200.
 
-Scope:
+Scope:  
 HaaS-platformV2 standard track (Traefik reverse proxy, DNS-based access).
 
 This document covers:
@@ -25,24 +25,32 @@ This document covers:
 
 ## Quick Checks
 
-Run these first from VM200:
+Run these first from VM200.
 
 Confirm containers are up:
 
-    cd /srv/stacks/immich
-    docker compose ps
+```bash
+cd /srv/stacks/immich
+docker compose ps
+```
 
 Check recent logs:
 
-    docker compose logs --tail=200 immich-server
+```bash
+docker compose logs --tail=200 immich-server
+```
 
 Confirm proxy network exists:
 
-    docker network ls | grep proxy
+```bash
+docker network ls | grep proxy
+```
 
 Confirm DNS resolves from your workstation:
 
-    ping -c 3 photos.home.ar
+```bash
+ping -c 3 photos.home.ar
+```
 
 ---
 
@@ -50,13 +58,15 @@ Confirm DNS resolves from your workstation:
 
 ### Immich won’t start
 
-Symptom:
+Symptom:  
 `immich-server` exits immediately or never becomes healthy.
 
 Check:
 
-    cd /srv/stacks/immich
-    docker compose logs immich-server
+```bash
+cd /srv/stacks/immich
+docker compose logs immich-server
+```
 
 Common causes:
 - Missing `.env`
@@ -67,39 +77,49 @@ Fixes:
 
 Create `.env` (if missing):
 
-    cp .env.example .env
+```bash
+cp .env.example .env
+```
 
 Bring up dependencies first:
 
-    docker compose up -d database redis
-    sleep 30
-    docker compose up -d
+```bash
+docker compose up -d database redis
+sleep 30
+docker compose up -d
+```
 
 Fix library permissions (host side):
 
-    sudo chown -R 1000:1000 /srv/data/immich/library
-    sudo chmod 755 /srv/data/immich/library
+```bash
+sudo chown -R 1000:1000 /srv/data/immich/library
+sudo chmod 755 /srv/data/immich/library
+```
 
 ---
 
 ### Restart loops
 
-Symptom:
+Symptom:  
 Containers restart repeatedly.
 
 Check:
 
-    docker compose ps
-    docker compose logs --tail=200 immich-server
+```bash
+docker compose ps
+docker compose logs --tail=200 immich-server
+```
 
 Common causes:
-- DB_PASSWORD mismatch between services and database
+- `DB_PASSWORD` mismatch between services and database
 
-Fix:
-Confirm `.env` has the correct DB_PASSWORD value and then restart stack:
+Fix:  
+Confirm `.env` has the correct `DB_PASSWORD` value and then restart stack:
 
-    docker compose down
-    docker compose up -d
+```bash
+docker compose down
+docker compose up -d
+```
 
 ---
 
@@ -107,47 +127,58 @@ Confirm `.env` has the correct DB_PASSWORD value and then restart stack:
 
 ### Postgres won’t start
 
-Symptom:
+Symptom:  
 `immich-postgres` crashes or stays unhealthy.
 
 Check:
 
-    docker compose logs --tail=200 database
+```bash
+docker compose logs --tail=200 database
+```
 
 Common causes:
 - Corrupt data directory
-- Bad permissions in /srv/data/immich/pgdata
+- Bad permissions in `/srv/data/immich/pgdata`
 
 Fix (permissions):
 
-    sudo chown -R 999:999 /srv/data/immich/pgdata
+```bash
+sudo chown -R 999:999 /srv/data/immich/pgdata
+```
 
-Last resort (DESTROYS DB DATA):
+Last resort (DESTROYS DB DATA):  
 Only do this if you accept wiping the database:
 
-    docker compose down
-    sudo rm -rf /srv/data/immich/pgdata/*
-    docker compose up -d
+```bash
+docker compose down
+sudo rm -rf /srv/data/immich/pgdata/*
+docker compose up -d
+```
 
 ---
 
 ### Immich can’t connect to database
 
-Symptom:
+Symptom:  
 `connection refused` or DB auth failures in server logs.
 
 Check:
 
-    docker compose logs --tail=200 immich-server
-    docker compose logs --tail=200 database
+```bash
+docker compose logs --tail=200 immich-server
+docker compose logs --tail=200 database
+```
 
 Fix:
 - Ensure `DB_HOSTNAME=database` in `.env`
 - Ensure `DB_PASSWORD` matches Postgres password expectations
-- Restart stack:
 
-    docker compose down
-    docker compose up -d
+Then restart stack:
+
+```bash
+docker compose down
+docker compose up -d
+```
 
 ---
 
@@ -155,71 +186,84 @@ Fix:
 
 ### Proxy network missing
 
-Symptom:
+Symptom:  
 Compose fails attaching to `proxy`.
 
 Fix (create once):
 
-    docker network create proxy
+```bash
+docker network create proxy
+```
 
 Then redeploy:
 
-    docker compose up -d
+```bash
+docker compose up -d
+```
 
 ---
 
 ### DNS resolves but site won’t load
 
-Symptom:
+Symptom:  
 `https://photos.home.ar` doesn’t load, or returns 404/502.
 
 Check DNS (workstation):
 
-    ping -c 3 photos.home.ar
+```bash
+ping -c 3 photos.home.ar
+```
 
 Check Traefik container is running (VM200):
 
-    docker ps | grep traefik
+```bash
+docker ps | grep traefik
+```
 
-Check Traefik sees the Immich router:
-(If you have Traefik dashboard enabled)
+Check Traefik sees the Immich router (Traefik dashboard):
 
-- Open: https://proxy.home.ar
-- Confirm router exists: immich
-- Confirm service port: 2283
+- Open: `https://proxy.home.ar`
+- Confirm router exists: `immich`
+- Confirm service port: `2283`
 
 Also confirm Immich is up:
 
-    cd /srv/stacks/immich
-    docker compose ps
-    docker compose logs --tail=200 immich-server
+```bash
+cd /srv/stacks/immich
+docker compose ps
+docker compose logs --tail=200 immich-server
+```
 
 ---
 
 ### HTTP works but HTTPS fails
 
-Symptom:
+Symptom:  
 Browser warns about cert or HTTPS won’t establish.
 
-Cause:
+Cause:  
 Certificate strategy not configured yet (expected in lab).
 
-Fix:
-For now, this is normal until you implement the TLS standard you choose (ACME/DNS-01, internal CA, etc.).
+Fix:  
+This is normal until you implement the TLS standard you choose (ACME/DNS-01, internal CA, etc.).
 
 ---
 
 ## Notes
 
-- Always check logs first:
-  
-      docker compose logs -f immich-server
+Always check logs first:
 
-- Typical startup order:
+```bash
+docker compose logs -f immich-server
+```
 
-  database → redis → immich-server → microservices → ml
+Typical startup order:
 
-- When in doubt:
+`database → redis → immich-server → microservices → ml`
 
-      docker compose down
-      docker compose up -d
+When in doubt:
+
+```bash
+docker compose down
+docker compose up -d
+```
