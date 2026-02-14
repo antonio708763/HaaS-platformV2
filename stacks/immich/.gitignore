@@ -1,0 +1,42 @@
+# Immich Stack Git Ignore
+# File: stacks/immich/.gitignore
+#
+# Purpose:
+# Prevent secrets and persistent application data from being committed into GitHub.
+#
+# IMPORTANT:
+# - Never commit .env files
+# - Never commit uploaded media libraries
+# - Never commit database storage directories
+# - Never commit machine learning cache files
+
+# -------------------------------------------------
+# Secrets / Environment
+# -------------------------------------------------
+
+.env
+.env.*
+
+# -------------------------------------------------
+# Persistent Data (Host-Mounted)
+# -------------------------------------------------
+
+library/
+pgdata/
+model-cache/
+
+# -------------------------------------------------
+# Logs (optional)
+# -------------------------------------------------
+
+logs/
+*.log
+
+# -------------------------------------------------
+# OS / Editor Junk
+# -------------------------------------------------
+
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
