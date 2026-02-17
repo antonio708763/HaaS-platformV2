@@ -1,0 +1,7 @@
+02-17-2026
+
+Traefik is serving https://photos.sotoprivatecloud.com with Let’s Encrypt cert
+
+Internal validation works with curl --resolve ...:192.168.1.24
+
+Problem: LAN devices are not consistently reaching the origin because DNS/CGNAT/hairpin behavior varies → solution is Split DNS via AdGuard Home
