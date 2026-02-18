@@ -231,5 +231,25 @@ TLS strategy (Let’s Encrypt vs internal CA) is defined in:
 - `docs/domain-and-dns-standard.md`
 
 Traefik should remain stable and standardized.
+In your repo, create a quick note like:
+
+stacks/reverse-proxy/README.md
+
+Current working domains:
+
+photos.sotoprivatecloud.com
+
+vault.sotoprivatecloud.com
+
+status.sotoprivatecloud.com
+
+AdGuard IP: 192.168.1.43
+
+Traefik IP: 192.168.1.24
+
+DNS strategy: Split DNS via AdGuard rewrite
+
+ACME working confirmed
+
 
 All complexity should live inside the service stacks, not the reverse proxy stack.
