@@ -251,5 +251,11 @@ DNS strategy: Split DNS via AdGuard rewrite
 
 ACME working confirmed
 
+“Traefik dashboard published at https://traefik.sotoprivatecloud.com/dashboard/”
+
+“Protected by BasicAuth + LAN allowlist”
+
+“Cert issued by Let’s Encrypt (ACME working)”
+
 
 All complexity should live inside the service stacks, not the reverse proxy stack.
