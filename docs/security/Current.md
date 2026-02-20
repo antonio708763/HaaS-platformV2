@@ -45,4 +45,28 @@ curl → 401
 photos/status/vault → 200
 
 
+DNS model:
 
+which names are public vs NXDOMAIN vs LAN rewrites
+
+Ports exposed on router:
+
+80/443 to Traefik
+
+8443 LAN-only (and how enforced)
+
+Firewall rules:
+
+INPUT and DOCKER-USER sections for 8443
+
+Traefik:
+
+which entrypoints exist (web/websecure/admin)
+
+cert resolver type (Cloudflare DNS-01)
+
+Docker daemon DNS config:
+
+/etc/docker/daemon.json dns list
+
+If you want, I can generate a clean “DNS & Exposure Policy” markdown section you can drop into your repo in the same style as your other docs.
