@@ -1,0 +1,15 @@
+docs/
+ ├ architecture/
+ │   ├ tier1_network_blueprint.md
+ │   ├ vlan_design.md
+ │   ├ firewall_policy.md
+ │
+ ├ deployment/
+ │   ├ proxmox_install.md
+ │   ├ router_install.md
+ │   ├ dns_install.md
+ │
+ ├ operations/
+ │   ├ backups.md
+ │   ├ updates.md
+ │   ├ recovery.md
