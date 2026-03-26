@@ -1,0 +1,150 @@
+# Network Standard (Tier-1 Baseline)
+
+Purpose:  
+This document defines the standardized network architecture and enforcement model for all HaaS deployments.
+
+This baseline ensures:
+- DNS control and visibility
+- VLAN isolation
+- Prevention of DNS bypass
+- Consistent, repeatable deployments
+
+---
+
+## Table of Contents
+
+- [VLAN Architecture](#vlan-architecture)
+- [DNS Enforcement Model](#dns-enforcement-model)
+- [Firewall Rule Template](#firewall-rule-template)
+- [NAT Configuration](#nat-configuration)
+- [Required Aliases](#required-aliases)
+- [Logging Standard](#logging-standard)
+- [Validation Checklist](#validation-checklist)
+- [Design Principles](#design-principles)
+- [Status](#status)
+
+---
+
+## VLAN Architecture
+
+Standard VLANs:
+
+| VLAN Name | Purpose |
+|----------|--------|
+| TRUSTED  | Personal devices |
+| SERVERS  | Infrastructure |
+| IOT      | Untrusted / smart devices |
+| GUEST    | Guest access |
+
+---
+
+## DNS Enforcement Model
+
+Objective:
+
+All DNS queries must go through AdGuard.
+
+Mechanisms:
+
+1. DHCP Assignment  
+DNS Server = AdGuard (e.g. 192.168.20.53)
+
+2. NAT Redirect  
+All port 53 traffic is redirected to AdGuard.
+
+---
+
+## Firewall Rule Template
+
+Per VLAN (top → bottom):
+
+1. Allow DNS → AdGuard (TCP/UDP 53)
+2. Block RFC1918
+3. Block PUBLIC_DNS (53)
+4. Block DOH (443)
+5. Allow Internet
+
+---
+
+## NAT Configuration
+
+Rule: Redirect DNS to AdGuard
+
+- Interface: VLAN
+- Protocol: TCP/UDP
+- Source: VLAN net
+- Destination: DNS_SERVERS
+- Destination Port: 53
+- Redirect Target IP: ADGUARD_PRIMARY
+- Redirect Target Port: 53
+
+---
+
+## Required Aliases
+
+RFC1918:
+```
+10.0.0.0/8
+172.16.0.0/12
+192.168.0.0/16
+```
+
+PUBLIC_DNS:
+```
+8.8.8.8
+8.8.4.4
+1.1.1.1
+1.0.0.1
+9.9.9.9
+```
+
+DOH_ENDPOINTS:
+```
+cloudflare-dns.com
+dns.google
+dns.quad9.net
+```
+
+ADGUARD_PRIMARY:
+```
+192.168.20.53
+```
+
+---
+
+## Logging Standard
+
+Enable logging on:
+- Block RFC1918
+- Block PUBLIC_DNS
+- Block DOH
+
+Do NOT log:
+- Allow rules
+- NAT rules
+
+---
+
+## Validation Checklist
+
+- [ ] DHCP DNS works
+- [ ] Manual DNS blocked or redirected
+- [ ] VLAN isolation working
+- [ ] Logs showing blocked traffic
+- [ ] Internet access working
+
+---
+
+## Design Principles
+
+- Enforce, don’t trust
+- Zero trust VLANs
+- Local-first DNS
+- Repeatable deployment
+
+---
+
+## Status
+
+- Status: ACCEPTED
+- Tier: Tier-1 Baseline
